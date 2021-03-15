@@ -10,6 +10,7 @@ import java.util.List;
 
 public class Lox {
     static boolean hadError = false;
+
     public static void main(String[] args) throws IOException {
         if (args.length > 1) {
             System.out.println("Usage: jlox [script]");
@@ -25,19 +26,21 @@ public class Lox {
         byte[] bytes = Files.readAllBytes(Paths.get(path));
         run(new String(bytes, Charset.defaultCharset()));
 
-        if (hadError) System.exit(65);
+        if (hadError)
+            System.exit(65);
     }
 
     private static void runPrompt() throws IOException {
         InputStreamReader input = new InputStreamReader(System.in);
         BufferedReader reader = new BufferedReader(input);
 
-        for(;;) {
+        for (;;) {
             System.out.print("> ");
             String line = reader.readLine();
-            if (line == null) break;
+            if (line == null)
+                break;
             run(line);
-            hadError = false; 
+            hadError = false;
         }
     }
 
@@ -45,10 +48,14 @@ public class Lox {
         Scanner scanner = new Scanner(source);
         List<Token> tokens = scanner.scanTokens();
 
-        //for now, just print the tokens
-        for(Token token : tokens) {
-            System.out.println(token);
-        }
+        Parser parser = new Parser(tokens);
+        Expr expression = parser.parse();
+
+        // Stop if there was a syntax error
+        if (hadError)
+            return;
+
+        System.out.println(new AstPrinter().print(expression));
     }
 
     static void error(int line, String message) {
@@ -60,5 +67,12 @@ public class Lox {
         hadError = true;
     }
 
+    static void error(Token token, String message) {
+        if (token.type == TokenType.EOF) {
+            report(token.line, " at end", message);
+        } else {
+            report(token.line, "at '" + token.lexeme + "'", message);
+        }
+    }
 
 }
